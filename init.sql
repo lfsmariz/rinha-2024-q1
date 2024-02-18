@@ -40,10 +40,10 @@ BEGIN
     IF (balance_value - value_op) * -1 > limit_value THEN
       RAISE EXCEPTION 'invalid';
     ELSE
-      UPDATE clientes SET saldo = balance_value - value_op WHERE id = id_client;
+      UPDATE clientes SET saldo = saldo - value_op WHERE id = id_client;
     END IF;
   ELSIF type_op = 'c' THEN
-    UPDATE clientes SET saldo = balance_value + value_op WHERE id = id_client;
+    UPDATE clientes SET saldo = saldo + value_op WHERE id = id_client;
   END IF;
 -- Insert on transaction
   INSERT INTO transacoes (cliente_id, valor, tipo, descricao)

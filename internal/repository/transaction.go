@@ -12,8 +12,10 @@ import (
 var Db *sql.DB
 
 func Connection() {
-	connStr := "host=localhost port=5432 user=admin password=123 dbname=rinha sslmode=disable"
+	connStr := "host=db port=5432 user=admin password=123 dbname=rinha sslmode=disable"
 	conn, err := sql.Open("postgres", connStr)
+	conn.SetMaxOpenConns(300)
+	conn.SetMaxIdleConns(300)
 
 	Db = conn
 
@@ -35,17 +37,17 @@ func AddTransaction(id int64, t string, v int64, d string) (*dto.TransactionResp
 	return &r, err
 }
 
-func GetBalance(id int64) *dto.Balance {
+func GetBalance(id int64) (*dto.Balance, error) {
 	row := Db.QueryRow("select limite, saldo from clientes c where c.id = $1", id)
 
 	r := dto.Balance{BalanceDate: time.Now()}
 
-	row.Scan(&r.Limit, &r.Total)
+	err := row.Scan(&r.Limit, &r.Total)
 
-	return &r
+	return &r, err
 }
 
-func GetLastTransactions(id int64) *[]dto.LastTransaction {
+func GetLastTransactions(id int64) (*[]dto.LastTransaction, error) {
 	q := `select valor, tipo , descricao , realizada_em from transacoes t 
 	where t.cliente_id = $1
 	order by  t.realizada_em desc
@@ -55,18 +57,18 @@ func GetLastTransactions(id int64) *[]dto.LastTransaction {
 	s := make([]dto.LastTransaction, 0, 10)
 
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	for rows.Next() {
 		v := dto.LastTransaction{}
 
 		if err := rows.Scan(&v.Value, &v.Type, &v.Description, &v.Date); err != nil {
-			log.Println(err)
+			return nil, err
 		}
 
 		s = append(s, v)
 	}
 
-	return &s
+	return &s, nil
 }
